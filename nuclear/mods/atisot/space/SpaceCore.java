@@ -60,20 +60,20 @@ public class SpaceCore {
 		
 		registeryTileEntity();
 		
-		if(SCoreConfigManager.enableCopperOreGen)
-		{
-			GameRegistry.registerWorldGenerator(new SCoreOverworldGenerator(SCoreBlocks.SCoreOre, 0, 24, 20, 75, 7));
-		}
-		
-		if (SCoreConfigManager.enableTinOreGen)
-        {
-            GameRegistry.registerWorldGenerator(new SCoreOverworldGenerator(SCoreBlocks.SCoreOre, 1, 22, 20, 60, 7));
-        }
-		
-		if (SCoreConfigManager.enableSilverOreGen)
-        {
-            GameRegistry.registerWorldGenerator(new SCoreOverworldGenerator(SCoreBlocks.SCoreOre, 2, 4, 0, 40, 4));
-        }
+//		if(SCoreConfigManager.enableCopperOreGen)
+//		{
+//			GameRegistry.registerWorldGenerator(new SCoreOverworldGenerator(SCoreBlocks.SCoreOre, 0, 24, 20, 75, 7));
+//		}
+//		
+//		if (SCoreConfigManager.enableTinOreGen)
+//        {
+//            GameRegistry.registerWorldGenerator(new SCoreOverworldGenerator(SCoreBlocks.SCoreOre, 1, 22, 20, 60, 7));
+//        }
+//		
+//		if (SCoreConfigManager.enableSilverOreGen)
+//        {
+//            GameRegistry.registerWorldGenerator(new SCoreOverworldGenerator(SCoreBlocks.SCoreOre, 2, 4, 0, 40, 4));
+//        }
 		
 		
     }
