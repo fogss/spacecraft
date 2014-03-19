@@ -1,83 +1,39 @@
 package nuclear.mods.atisot.space.tile;
 
 import ic2.api.energy.EnergyNet;
-import ic2.api.energy.event.EnergyTileLoadEvent;
-import ic2.api.energy.event.EnergyTileUnloadEvent;
 import ic2.api.energy.tile.IEnergySink;
-import net.minecraft.entity.item.EntityTNTPrimed;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
-import net.minecraft.network.INetworkManager;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.Packet132TileEntityData;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 import net.minecraftforge.common.ForgeDirection;
-import net.minecraftforge.common.MinecraftForge;
-import nuclear.mods.atisot.space.SLog;
-import cpw.mods.fml.common.network.PacketDispatcher;
 
-public class SCoreEntityTileWorkbench extends TileEntity implements IEnergySink, IInventory {
+public class SCoreEntityTileWorkbench extends SCoreTileEntityElectric implements IEnergySink, IInventory {
 	
 	
-	double energy = 0;
-	double maxenergy = 50000;
-	boolean init;
+	public SCoreEntityTileWorkbench() {
+		super(50000, EnergyNet.instance.getPowerFromTier(2) );
+		
+	}
 	
-	boolean work = false;
 	public boolean preparetera = false;
 	public boolean prepareterac = false;
 	
 	private ItemStack[] inv = new ItemStack[2];
-	
-	protected long ticks = 0;
-
-	String status;
-	
-	public String button;
 	
 	@Override
 	public void updateEntity() {
 		 
 		super.updateEntity();
 		
-		if (!this.init && this.worldObj != null) {
-	    	
-			if(!this.worldObj.isRemote)
-			{
-				EnergyTileLoadEvent e = new EnergyTileLoadEvent(this);
-				MinecraftForge.EVENT_BUS.post(e);
-				
-				this.init = true;
-			}
-	    	
-		}
-
 		if(this.prepareterac && !this.preparetera && this.getEnergy() >= 25000)
 		{
 			this.checkpreparearea();
 		}
-		
-		if (this.ticks == 0)
-		{
-			this.initiate();
-		}
-	
-		if (this.ticks >= Long.MAX_VALUE)
-		{
-			this.ticks = 1;
-		}
-	
-		this.ticks++;
-		
-		if (this.ticks % 3 == 0)
-		{
-			this.sendDescriptionPacket();
-			this.getWorldObj().markBlockForUpdate(this.xCoord, this.yCoord, this.zCoord);
-		}
+
 	}
 	
 	private void checkpreparearea()
@@ -110,24 +66,9 @@ public class SCoreEntityTileWorkbench extends TileEntity implements IEnergySink,
 		this.preparetera = true;
 	}
 
-	public void initiate(){}
-	 
-	 @Override
-	 public void invalidate() {
-		 
-
-	        	EnergyTileUnloadEvent e = new EnergyTileUnloadEvent(this);
-	        	
-	            MinecraftForge.EVENT_BUS.post(e);
-	 
-	      
-	 }
 	 @Override
     public void readFromNBT(NBTTagCompound nbt) {
         super.readFromNBT(nbt);    
- 
-
-            this.energy = nbt.getDouble("energy");
             
             final NBTTagList var2 = nbt.getTagList("Items");
             this.inv = new ItemStack[this.getSizeInventory()];
@@ -146,8 +87,6 @@ public class SCoreEntityTileWorkbench extends TileEntity implements IEnergySink,
 	 @Override
     public void writeToNBT(NBTTagCompound nbt) {
         super.writeToNBT(nbt);    
- 
-        nbt.setDouble("energy", this.energy);
         
         final NBTTagList list = new NBTTagList();
 
@@ -176,42 +115,6 @@ public class SCoreEntityTileWorkbench extends TileEntity implements IEnergySink,
 		}
 		
 		return false;
-	}
-
-	@Override
-	public double demandedEnergyUnits() {
-		return Math.max(0, this.getMaxEnergy() - this.getEnergy());
-	}
-
-	@Override
-	public double injectEnergyUnits(ForgeDirection directionFrom, double amount)
-	{
-		if(amount > getMaxSafeInput())
-		{
-			this.getWorldObj().destroyBlock(this.xCoord, this.yCoord, this.zCoord, false);
-			this.getWorldObj().createExplosion(new EntityTNTPrimed(this.getWorldObj()), this.xCoord, this.yCoord, this.zCoord, 2, true);
-		}
-		
-		if(this.getEnergy() >= this.getMaxEnergy()) return amount;
-		
-		double openenergy = this.getMaxEnergy() - this.getEnergy();
-		
-		if(openenergy >= amount)
-		{
-			return this.energy += amount;
-		}
-		else if(amount >= openenergy)
-		{
-			this.energy = this.maxenergy;
-			return amount - openenergy;
-		}
-		
-		return 0;
-	}
-
-	@Override
-	public int getMaxSafeInput() {
-		return EnergyNet.instance.getPowerFromTier(2);
 	}
 
 	// IInventory
@@ -319,62 +222,5 @@ public class SCoreEntityTileWorkbench extends TileEntity implements IEnergySink,
 	{
 		return false;
 	}
-	
-	// Other
-	
-	public int getScaledLevel(int i)
-    {
-		return (int) Math.floor(this.getEnergy() * i / (this.getMaxEnergy()));
-    }
-	
-	public double getEnergy()
-	{
-		return this.energy;
-	}
-	
-	public double getMaxEnergy()
-	{
-		return this.maxenergy;
-	}
-	
-	public String getStatus()
-	{
-		return "";
-	}
-	
-	public void setStatus(String i)
-	{
-		this.status = i;
-	}
-	
-	// Packet
-	
-	@Override
-	public Packet getDescriptionPacket()
-	{
-		NBTTagCompound tag = new NBTTagCompound();
-		
-		tag.setDouble("energy", this.energy);
-		
-        writeToNBT(tag);
-        
-        return new Packet132TileEntityData(xCoord, yCoord, zCoord, 0, tag);
-	}
-		
-	@Override
-	public void onDataPacket(INetworkManager net, Packet132TileEntityData pkt){
 
-		readFromNBT(pkt.data);
-		
-	}
-
-	public void sendDescriptionPacket() {
-
-		PacketDispatcher.sendPacketToAllAround(xCoord, yCoord, zCoord, 64D, worldObj.provider.dimensionId, getDescriptionPacket());
-	}
-	
-	
-
-
-	
 }

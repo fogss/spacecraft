@@ -1,42 +1,42 @@
 package nuclear.mods.atisot.space.tile;
 
+import ic2.api.energy.event.EnergyTileLoadEvent;
+import ic2.api.energy.event.EnergyTileUnloadEvent;
 import ic2.api.energy.tile.IEnergySink;
+import net.minecraft.entity.item.EntityTNTPrimed;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.network.INetworkManager;
 import net.minecraft.network.packet.Packet;
+import net.minecraft.network.packet.Packet132TileEntityData;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.ForgeDirection;
+import net.minecraftforge.common.MinecraftForge;
+import cpw.mods.fml.common.network.PacketDispatcher;
 
-import com.google.common.io.ByteArrayDataInput;
-
-public abstract class SCoreTileEntityElectric extends TileEntity implements IEnergySink//, IPacketReceiver
+public class SCoreTileEntityElectric extends TileEntity implements IEnergySink
 {
 
 	double energy = 0;
-	double maxenergy = 10000;
-	
+	double maxenergy;
 	int tier;
+	
+	boolean init;
+	
+	boolean isenable;
 	
 	protected long ticks = 0;
 	
-	public abstract void readPacket(ByteArrayDataInput data);
-
-    public abstract Packet getPacket();
-	
-	public SCoreTileEntityElectric()
+	public SCoreTileEntityElectric(double maxenergy, int tier)
 	{
-		
+		this.maxenergy = maxenergy;
+		this.tier = tier;
 	}
 	
 	@Override
     public void updateEntity() {
 		
-		if (!this.worldObj.isRemote)
-        {
-//            if (this.ticks % 3 == 0)
-//            {
-//                PacketManager.sendPacketToClients(this.getPacket(), this.worldObj, new Vector3(this), this.getPacketRange());
-//            }
-        }
-		
+		super.updateEntity();
+
 		if (this.ticks == 0)
 		{
 			this.initiate();
@@ -48,6 +48,21 @@ public abstract class SCoreTileEntityElectric extends TileEntity implements IEne
 		}
 
 		this.ticks++;
+		
+		if (!this.worldObj.isRemote)
+        {
+			if (!this.init)
+			{
+				this.initIC();
+			}
+			
+			if (this.ticks % 3 == 0)
+            {
+				this.sendDescriptionPacket();
+				this.getWorldObj().markBlockForUpdate(this.xCoord, this.yCoord, this.zCoord);
+            }
+			
+        }
 	}
 
 	/**
@@ -55,6 +70,29 @@ public abstract class SCoreTileEntityElectric extends TileEntity implements IEne
 	 */
 	public void initiate()
 	{
+	}
+	
+	@Override
+	public void invalidate()
+	{
+		this.unloadTileIC2();
+		super.invalidate();
+	}
+	
+	@Override
+	public void readFromNBT(NBTTagCompound nbt) {
+		super.readFromNBT(nbt);    
+		
+		this.energy = nbt.getDouble("energy");
+		this.isenable = nbt.getBoolean("isenable");
+	}
+	 
+	@Override
+	public void writeToNBT(NBTTagCompound nbt) {
+		super.writeToNBT(nbt);    
+		
+		nbt.setDouble("energy", this.energy);
+	    nbt.setBoolean("isenable", this.isenable);
 	}
 	
 	@Override
@@ -70,13 +108,19 @@ public abstract class SCoreTileEntityElectric extends TileEntity implements IEne
 
 	@Override
 	public double injectEnergyUnits(ForgeDirection directionFrom, double amount) {
+		if(amount > getMaxSafeInput())
+		{
+			this.getWorldObj().destroyBlock(this.xCoord, this.yCoord, this.zCoord, false);
+			this.getWorldObj().createExplosion(new EntityTNTPrimed(this.getWorldObj()), this.xCoord, this.yCoord, this.zCoord, 2, true);
+		}
+		
 		if(this.getEnergy() >= this.getMaxEnergy()) return amount;
 		
 		double openenergy = this.getMaxEnergy() - this.getEnergy();
 		
 		if(openenergy >= amount)
 		{
-			return this.energy += amount;		
+			return this.energy += amount;
 		}
 		else if(amount >= openenergy)
 		{
@@ -102,26 +146,65 @@ public abstract class SCoreTileEntityElectric extends TileEntity implements IEne
 		return this.maxenergy;
 	}
 	
+	public boolean isEnable()
+	{
+		return this.isenable;
+	}
+	
+	public void setEnable(boolean enable)
+	{
+		this.isenable = enable;
+	}
+	
+	protected void initIC()
+	{
+		if (!this.init && this.worldObj != null)
+		{
+			
+			MinecraftForge.EVENT_BUS.post(new EnergyTileLoadEvent(this));
+			
+			this.init = true;
+		}
+	}
+	
+	private void unloadTileIC2()
+	{
+		if (this.init && this.worldObj != null)
+		{
+			
+			MinecraftForge.EVENT_BUS.post(new EnergyTileUnloadEvent(this));
+			
+			this.init = false;
+		}
+	}
+	
 	public int getScaledLevel(int i)
     {
 		return (int) Math.floor(this.getEnergy() * i / (this.getMaxEnergy()));
     }
 
-	protected double getPacketRange()
-    {
-        return 12.0D;
-    }
-//	
-//	@Override
-//    public void handlePacketData(INetworkManager network, int type, Packet250CustomPayload packet, EntityPlayer player, ByteArrayDataInput dataStream)
-//    {
-//        try
-//        {
-//            this.readPacket(dataStream);
-//        }
-//        catch (final Exception e)
-//        {
-//            e.printStackTrace();
-//        }
-//    }
+	@Override
+	public Packet getDescriptionPacket()
+	{
+		NBTTagCompound tag = new NBTTagCompound();
+		
+		tag.setDouble("energy", this.energy);
+		tag.setBoolean("isenable", this.isenable);
+		
+        writeToNBT(tag);
+        
+        return new Packet132TileEntityData(xCoord, yCoord, zCoord, 0, tag);
+	}
+		
+	@Override
+	public void onDataPacket(INetworkManager net, Packet132TileEntityData pkt){
+
+		readFromNBT(pkt.data);
+		
+	}
+
+	public void sendDescriptionPacket() {
+
+		PacketDispatcher.sendPacketToAllAround(xCoord, yCoord, zCoord, 64D, worldObj.provider.dimensionId, getDescriptionPacket());
+	}
 }

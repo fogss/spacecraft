@@ -4,11 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.StatCollector;
-import nuclear.mods.atisot.space.SLog;
 import nuclear.mods.atisot.space.SpaceCore;
 import nuclear.mods.atisot.space.inventory.SCoreWorkbenchContainer;
 import nuclear.mods.atisot.space.tile.SCoreEntityTileWorkbench;
@@ -24,9 +22,7 @@ public class SCoreWorkbenchGui extends SCoreGuiContainer {
 	SCoreEntityTileWorkbench workbench;
 	
 	GuiButton b;
-	
-	String button;
-	
+
     public SCoreWorkbenchGui(InventoryPlayer inventoryPlayer, SCoreEntityTileWorkbench tileEntity){
     	super(new SCoreWorkbenchContainer(inventoryPlayer, tileEntity));
     	this.workbench = tileEntity;
@@ -60,8 +56,6 @@ public class SCoreWorkbenchGui extends SCoreGuiContainer {
             fontRenderer.drawString("Space Workbench", 30, 10, 4210752);
             //draws "Inventory" or your regional equivalent
             //fontRenderer.drawString(StatCollector.translateToLocal("container.inventory"), 30, ySize - 90 + 2, 4210752);
-            
-            this.button = this.workbench.button;
 
             List<String> electricityDesc = new ArrayList<String>();
             electricityDesc.add(StatCollector.translateToLocal("container.inventory"));
