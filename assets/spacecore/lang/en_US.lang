@@ -1,0 +1,13 @@
+# Space Core Language File = UNITED STATES ENGLISH
+
+# GENERAL ITEMS
+
+item.itemingot.CopperIngot.name=Copper Ingot
+item.itemingot.TinIngot.name=Tin Ingot
+item.itemingot.SilverIngot.name=Silver Ingot
+item.itemingot.SteelIngot.name=Steel Ingot
+
+# GENERAL BLOCKS
+
+tile.rocketModules.launchpadstand.name=Stand of Launcher Pad
+tile.rocketModules.launchpadfooter.name=Launch Pad
